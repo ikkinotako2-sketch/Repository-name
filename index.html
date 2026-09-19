@@ -50,6 +50,16 @@
 <div class="improveResult" id="improveResult">改善後の投稿を探しています。</div>
 </section>
 
+<section class="panel improvePanel">
+<div class="improveHead"><div><div class="improveTitle">投稿時間の最適化</div><div class="improveSub">公開投稿の反応をJSTの投稿時間ごとに集計し、反応が良い時間帯を学習します。データが少ない間は無理に固定しません。</div></div><div class="improveBadge" id="timeBadge">学習中</div></div>
+<div class="improveGrid">
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon" id="timeIcon">↗</span><span>現在の推奨時間帯</span></div><div class="improveItemSub" id="bestHour">データ収集中</div></div>
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon">#</span><span>学習サンプル</span></div><div class="improveItemSub" id="timeSamples">—</div></div>
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon">◎</span><span>運用方針</span></div><div class="improveItemSub">反応の良い時間に70〜80%、残り20〜30%は別時間帯をテストして偏りを防ぎます。</div></div>
+</div>
+<div class="improveResult" id="timeResult">時間帯別の反応を集計しています。</div>
+</section>
+
 <section class="two"><div class="panel box"><h2>反応の内訳</h2><div class="bars" id="bars"></div></div><div class="panel box"><h2>運用タイムライン</h2><div class="timeline">
 <div class="event"><div class="eventIcon">✓</div><div><div class="eventTitle">Bluesky投稿ルート復旧</div><div class="eventSub">Authorization / JSON Body / Post ID保存を修正</div></div></div>
 <div class="event"><div class="eventIcon">✓</div><div><div class="eventTitle">本文付き自動投稿を確認</div><div class="eventSub">Successログと公開投稿を確認済み</div></div></div>
@@ -74,6 +84,32 @@ function jstDay(d){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'
 function bars(a){var vals=[['いいね',a.likes],['リポスト',a.reposts],['返信',a.replies]],mx=Math.max(1,a.likes,a.reposts,a.replies),out='';vals.forEach(function(x){out+='<div class="barrow"><span>'+x[0]+'</span><div class="track"><div class="fill" style="width:'+Math.max(2,x[1]/mx*100)+'%"></div></div><b>'+nf.format(x[1])+'</b></div>'});document.getElementById('bars').innerHTML=out}
 function nextInfo(todayCount){var now=new Date(),jp=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Tokyo'})),h=jp.getHours(),m=jp.getMinutes(),el=document.getElementById('nextAction'),sub=document.getElementById('nextDetail');if(todayCount>=3){el.textContent='00:05 日次カウンターをリセット';sub.textContent='上限到達後は投稿を停止。00:05リセット後、次の毎時スケジュールから再開します。'}else{var nh=h+1;if(nh>=24)nh=0;el.textContent=String(nh).padStart(2,'0')+':00 次回スケジュール確認';sub.textContent='Safety Gateを通過すればAI本文生成 → Bluesky投稿へ進みます。'}}
 function setCheck(id,state){var el=document.getElementById(id);el.className='checkIcon'+(state===true?' ok':state===false?' ng':'');el.textContent=state===true?'✓':state===false?'×':'—'}
+function evaluateTime(all){
+  var groups={};
+  all.forEach(function(x){
+    var d=new Date(x.post.record.createdAt);
+    if(d<START)return;
+    var hour=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',hour:'2-digit',hour12:false}).format(d));
+    var engagement=(x.post.likeCount||0)+(x.post.repostCount||0)*2+(x.post.replyCount||0)*2;
+    if(!groups[hour])groups[hour]={n:0,score:0};
+    groups[hour].n++;groups[hour].score+=engagement;
+  });
+  var rows=Object.keys(groups).map(function(h){return {hour:Number(h),n:groups[h].n,avg:groups[h].score/groups[h].n,total:groups[h].score}}).sort(function(a,b){return b.avg-a.avg||b.n-a.n});
+  var total=rows.reduce(function(s,r){return s+r.n},0),badge=document.getElementById('timeBadge'),best=document.getElementById('bestHour'),samples=document.getElementById('timeSamples'),res=document.getElementById('timeResult'),icon=document.getElementById('timeIcon');
+  samples.textContent=total+'件';
+  if(total<8 || !rows.length){
+    badge.textContent='学習中';badge.style.background='#3b3015';badge.style.color='#ffd078';
+    best.textContent=rows.length?String(rows[0].hour).padStart(2,'0')+':00台（暫定）':'データ収集中';
+    res.textContent='まだサンプルが少ないため、時間帯を固定せずデータを集めます。8件以上から暫定最適化を開始します。';
+    icon.className='checkIcon';
+    return;
+  }
+  var top=rows[0],second=rows[1];
+  badge.textContent='最適化中';badge.style.background='#123728';badge.style.color='#73eab8';icon.className='checkIcon ok';icon.textContent='✓';
+  best.textContent=String(top.hour).padStart(2,'0')+':00台';
+  var alt=second?' ／ 次点 '+String(second.hour).padStart(2,'0')+':00台':'';
+  res.textContent='反応ベースの暫定推奨: '+String(top.hour).padStart(2,'0')+':00台'+alt+'。今後もデータ追加で自動更新します。';
+}
 function evaluateImprovement(all){
   var posts=all.filter(function(x){return new Date(x.post.record.createdAt)>=IMPROVEMENT_AT});
   var badge=document.getElementById('improveBadge'),result=document.getElementById('improveResult');
@@ -95,7 +131,7 @@ function evaluateImprovement(all){
   else{badge.textContent='未反映 0/3';badge.style.background='#3a1b25';badge.style.color='#ff9cab'}
   result.innerHTML='対象投稿: '+dt.format(new Date(p.post.record.createdAt))+' ／ 自動判定 '+score+'/3。 <a class="link" href="'+url(p)+'" target="_blank" rel="noopener">投稿を見る ↗</a>';
 }
-async function load(){try{var r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json(),all=(data.feed||[]).filter(function(x){return x.post&&x.post.record&&x.post.record.createdAt}),exp=all.filter(function(x){return new Date(x.post.record.createdAt)>=START}),a={likes:0,reposts:0,replies:0};exp.forEach(function(x){a.likes+=x.post.likeCount||0;a.reposts+=x.post.repostCount||0;a.replies+=x.post.replyCount||0});var day=jstDay(new Date()),today=all.filter(function(x){return jstDay(new Date(x.post.record.createdAt))===day});document.getElementById('todayCount').textContent=today.length;document.getElementById('todayFill').style.width=Math.min(100,today.length/3*100)+'%';document.getElementById('postCount').textContent=nf.format(exp.length);document.getElementById('likes').textContent=nf.format(a.likes);document.getElementById('engagement').textContent=nf.format(a.likes+a.reposts+a.replies);bars(a);nextInfo(today.length);evaluateImprovement(all);
+async function load(){try{var r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json(),all=(data.feed||[]).filter(function(x){return x.post&&x.post.record&&x.post.record.createdAt}),exp=all.filter(function(x){return new Date(x.post.record.createdAt)>=START}),a={likes:0,reposts:0,replies:0};exp.forEach(function(x){a.likes+=x.post.likeCount||0;a.reposts+=x.post.repostCount||0;a.replies+=x.post.replyCount||0});var day=jstDay(new Date()),today=all.filter(function(x){return jstDay(new Date(x.post.record.createdAt))===day});document.getElementById('todayCount').textContent=today.length;document.getElementById('todayFill').style.width=Math.min(100,today.length/3*100)+'%';document.getElementById('postCount').textContent=nf.format(exp.length);document.getElementById('likes').textContent=nf.format(a.likes);document.getElementById('engagement').textContent=nf.format(a.likes+a.reposts+a.replies);bars(a);nextInfo(today.length);evaluateImprovement(all);evaluateTime(all);
 var latest=all[0],dot=document.getElementById('statusDot'),txt=document.getElementById('statusText'),detail=document.getElementById('statusDetail'),alert=document.getElementById('alert');if(latest){var age=(Date.now()-new Date(latest.post.record.createdAt))/36e5;if(new Date(latest.post.record.createdAt)<START){dot.style.background='var(--bad)';txt.textContent='停止の可能性';detail.textContent='実験開始以降の公開投稿がありません。';alert.style.display='block';alert.textContent='要確認: 公開フィードで新しい投稿を検知できません。'}else if(age>36){dot.style.background='var(--warn)';txt.textContent='要確認';detail.textContent='最新投稿から36時間以上空いています。最終投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='block';alert.textContent='公開側で長時間投稿がありません。n8nのExecutionsを確認してください。'}else if(today.length>=3){dot.style.background='var(--good)';txt.textContent='正常・本日の上限到達';detail.textContent='公開投稿を検知。日次上限後の停止フェーズです。最新投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='none'}else{dot.style.background='var(--good)';txt.textContent='自動投稿 稼働中';detail.textContent='公開投稿を正常に検知しています。最新投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='none'}}else{txt.textContent='データなし';detail.textContent='公開フィードに投稿がありません。'}
 var out='';exp.slice(0,12).forEach(function(x){out+='<article class="post"><div class="posttop"><span>'+dt.format(new Date(x.post.record.createdAt))+'</span><a class="link" href="'+url(x)+'" target="_blank" rel="noopener">Blueskyで見る ↗</a></div><div class="posttext">'+esc(x.post.record.text||'')+'</div><div class="metrics"><span class="pill">♡ '+nf.format(x.post.likeCount||0)+'</span><span class="pill">↻ '+nf.format(x.post.repostCount||0)+'</span><span class="pill">💬 '+nf.format(x.post.replyCount||0)+'</span></div></article>'});document.getElementById('posts').innerHTML=out||'<div class="empty">実験開始以降の投稿はまだありません。</div>';document.getElementById('updated').textContent='更新 '+dt.format(new Date())}catch(e){document.getElementById('updated').textContent='取得エラー';document.getElementById('statusText').textContent='公開データ取得エラー';document.getElementById('statusDetail').textContent='Bluesky APIからデータを取得できませんでした。';var al=document.getElementById('alert');al.style.display='block';al.textContent='通信エラー: 少し後で再読み込みしてください。';document.getElementById('posts').innerHTML='<div class="empty">Bluesky公開データの取得に失敗しました。</div>'}}
 load();setInterval(load,300000);
