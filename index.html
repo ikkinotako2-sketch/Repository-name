@@ -15,6 +15,7 @@
 .two{display:grid;grid-template-columns:.8fr 1.2fr;gap:14px;margin-bottom:14px}.box{padding:19px}.box h2{font-size:16px;margin:0 0 14px}.bars{display:grid;gap:11px}.barrow{display:grid;grid-template-columns:70px 1fr 40px;gap:10px;align-items:center;font-size:13px}.track{height:9px;background:#091321;border-radius:99px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px}.timeline{display:grid;gap:10px}.event{display:grid;grid-template-columns:26px 1fr;gap:10px}.eventIcon{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#123728;color:#73eab8;font-size:12px;font-weight:950}.event.wait .eventIcon{background:#3b3015;color:#ffd078}.eventTitle{font-size:13px;font-weight:900}.eventSub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45}
 .postsPanel{padding:19px}.postsPanel h2{font-size:16px;margin:0 0 14px}.posts{display:grid;gap:10px}.post{padding:14px;border:1px solid var(--line);border-radius:14px;background:#091525}.posttop{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px}.posttext{margin:9px 0 12px;white-space:pre-wrap;line-height:1.55;font-size:14px}.metrics{display:flex;flex-wrap:wrap;gap:7px}.pill{padding:5px 8px;border-radius:999px;background:#142741;font-size:11px}.link{color:#8fc4ff;text-decoration:none}.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}.footer{font-size:11px;color:var(--muted);margin:18px 3px;line-height:1.6}
 .alert{display:none;padding:12px 14px;border-radius:13px;background:#3a1b25;border:1px solid #743044;color:#ffb1bc;margin-top:12px;font-size:13px;font-weight:800}
+.improvePanel{padding:20px;margin-bottom:14px}.improveHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:15px}.improveTitle{font-size:18px;font-weight:950}.improveSub{color:var(--muted);font-size:12px;margin-top:5px;line-height:1.5}.improveBadge{padding:8px 11px;border-radius:999px;background:#3b3015;color:#ffd078;font-size:12px;font-weight:900;white-space:nowrap}.improveGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.improveItem{padding:13px;border:1px solid var(--line);border-radius:14px;background:#0a1525}.improveItemTop{display:flex;gap:8px;align-items:center;font-size:12px;font-weight:900}.checkIcon{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#26354a;color:#b8c8dc;font-size:11px}.checkIcon.ok{background:#123728;color:#73eab8}.checkIcon.ng{background:#3a1b25;color:#ff9cab}.improveItemSub{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45}.improveResult{margin-top:12px;padding:12px 14px;border-radius:13px;background:#0a1525;border:1px solid var(--line);font-size:12px;line-height:1.55}
 @media(max-width:900px){.hero,.two{grid-template-columns:1fr}.steps{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.wrap{padding:14px}.top{display:block}.updated{display:inline-block;margin-top:10px}.hero,.progressPanel,.box,.postsPanel{padding:15px}.steps{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:14px}.v{font-size:25px}.stateTitle{font-size:20px}.posttop{align-items:flex-start}.percent{font-size:25px}}
 </style>
 </head>
@@ -39,6 +40,16 @@
 <div class="panel stat"><div class="k">合計反応</div><div class="v" id="engagement">—</div><div class="small">いいね + repost + reply</div></div>
 </section>
 
+<section class="panel improvePanel">
+<div class="improveHead"><div><div class="improveTitle">改善が反映されたか</div><div class="improveSub">9/19 14:40の自動分析で決まった改善ルールを、改善後の最新投稿に対して自動チェックします。</div></div><div class="improveBadge" id="improveBadge">確認中…</div></div>
+<div class="improveGrid">
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon" id="improveQ1">—</span><span>冒頭が短い問いかけ</span></div><div class="improveItemSub">最初の1文が短く、質問形式になっているか</div></div>
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon" id="improveQ2">—</span><span>要点が3つ以内</span></div><div class="improveItemSub">番号付きの主要ポイントが1〜3個に収まっているか</div></div>
+<div class="improveItem"><div class="improveItemTop"><span class="checkIcon" id="improveQ3">—</span><span>最後に答えやすい質問</span></div><div class="improveItemSub">ハッシュタグを除いた最後の文が質問で終わっているか</div></div>
+</div>
+<div class="improveResult" id="improveResult">改善後の投稿を探しています。</div>
+</section>
+
 <section class="two"><div class="panel box"><h2>反応の内訳</h2><div class="bars" id="bars"></div></div><div class="panel box"><h2>運用タイムライン</h2><div class="timeline">
 <div class="event"><div class="eventIcon">✓</div><div><div class="eventTitle">Bluesky投稿ルート復旧</div><div class="eventSub">Authorization / JSON Body / Post ID保存を修正</div></div></div>
 <div class="event"><div class="eventIcon">✓</div><div><div class="eventTitle">本文付き自動投稿を確認</div><div class="eventSub">Successログと公開投稿を確認済み</div></div></div>
@@ -52,6 +63,7 @@
 <script>
 var HANDLE='makuto00.bsky.social';
 var START=new Date('2026-09-15T00:00:00+09:00');
+var IMPROVEMENT_AT=new Date('2026-09-19T14:40:37+09:00');
 var API='https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor='+encodeURIComponent(HANDLE)+'&limit=100&filter=posts_no_replies';
 var nf=new Intl.NumberFormat('ja-JP');
 var dt=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -61,7 +73,29 @@ function url(p){return 'https://bsky.app/profile/'+HANDLE+'/post/'+key(p.post.ur
 function jstDay(d){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(d)}
 function bars(a){var vals=[['いいね',a.likes],['リポスト',a.reposts],['返信',a.replies]],mx=Math.max(1,a.likes,a.reposts,a.replies),out='';vals.forEach(function(x){out+='<div class="barrow"><span>'+x[0]+'</span><div class="track"><div class="fill" style="width:'+Math.max(2,x[1]/mx*100)+'%"></div></div><b>'+nf.format(x[1])+'</b></div>'});document.getElementById('bars').innerHTML=out}
 function nextInfo(todayCount){var now=new Date(),jp=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Tokyo'})),h=jp.getHours(),m=jp.getMinutes(),el=document.getElementById('nextAction'),sub=document.getElementById('nextDetail');if(todayCount>=3){el.textContent='00:05 日次カウンターをリセット';sub.textContent='上限到達後は投稿を停止。00:05リセット後、次の毎時スケジュールから再開します。'}else{var nh=h+1;if(nh>=24)nh=0;el.textContent=String(nh).padStart(2,'0')+':00 次回スケジュール確認';sub.textContent='Safety Gateを通過すればAI本文生成 → Bluesky投稿へ進みます。'}}
-async function load(){try{var r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json(),all=(data.feed||[]).filter(function(x){return x.post&&x.post.record&&x.post.record.createdAt}),exp=all.filter(function(x){return new Date(x.post.record.createdAt)>=START}),a={likes:0,reposts:0,replies:0};exp.forEach(function(x){a.likes+=x.post.likeCount||0;a.reposts+=x.post.repostCount||0;a.replies+=x.post.replyCount||0});var day=jstDay(new Date()),today=all.filter(function(x){return jstDay(new Date(x.post.record.createdAt))===day});document.getElementById('todayCount').textContent=today.length;document.getElementById('todayFill').style.width=Math.min(100,today.length/3*100)+'%';document.getElementById('postCount').textContent=nf.format(exp.length);document.getElementById('likes').textContent=nf.format(a.likes);document.getElementById('engagement').textContent=nf.format(a.likes+a.reposts+a.replies);bars(a);nextInfo(today.length);
+function setCheck(id,state){var el=document.getElementById(id);el.className='checkIcon'+(state===true?' ok':state===false?' ng':'');el.textContent=state===true?'✓':state===false?'×':'—'}
+function evaluateImprovement(all){
+  var posts=all.filter(function(x){return new Date(x.post.record.createdAt)>=IMPROVEMENT_AT});
+  var badge=document.getElementById('improveBadge'),result=document.getElementById('improveResult');
+  if(!posts.length){
+    setCheck('improveQ1',null);setCheck('improveQ2',null);setCheck('improveQ3',null);
+    badge.textContent='次回投稿待ち';badge.style.background='#3b3015';badge.style.color='#ffd078';
+    result.textContent='改善分析（9/19 14:40）より後の投稿がまだありません。次の投稿が出ると自動判定します。';
+    return;
+  }
+  var p=posts[0],text=(p.post.record.text||'').trim(),lines=text.split(/\r?\n/).map(function(s){return s.trim()}).filter(Boolean);
+  var first=lines[0]||'',q1=first.length<=45 && /[?？]$/.test(first);
+  var points=lines.filter(function(s){return /^(?:[1-3１-３](?:[\s.．、:：)）]|$)|[①②③])/.test(s)}).length;
+  var q2=points>=1 && points<=3;
+  var bodyLines=lines.filter(function(s){return !/^#/.test(s)}),last=bodyLines[bodyLines.length-1]||'',q3=/[?？]$/.test(last);
+  setCheck('improveQ1',q1);setCheck('improveQ2',q2);setCheck('improveQ3',q3);
+  var score=[q1,q2,q3].filter(Boolean).length;
+  if(score===3){badge.textContent='反映 3/3';badge.style.background='#123728';badge.style.color='#73eab8'}
+  else if(score>=1){badge.textContent='一部反映 '+score+'/3';badge.style.background='#3b3015';badge.style.color='#ffd078'}
+  else{badge.textContent='未反映 0/3';badge.style.background='#3a1b25';badge.style.color='#ff9cab'}
+  result.innerHTML='対象投稿: '+dt.format(new Date(p.post.record.createdAt))+' ／ 自動判定 '+score+'/3。 <a class="link" href="'+url(p)+'" target="_blank" rel="noopener">投稿を見る ↗</a>';
+}
+async function load(){try{var r=await fetch(API,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json(),all=(data.feed||[]).filter(function(x){return x.post&&x.post.record&&x.post.record.createdAt}),exp=all.filter(function(x){return new Date(x.post.record.createdAt)>=START}),a={likes:0,reposts:0,replies:0};exp.forEach(function(x){a.likes+=x.post.likeCount||0;a.reposts+=x.post.repostCount||0;a.replies+=x.post.replyCount||0});var day=jstDay(new Date()),today=all.filter(function(x){return jstDay(new Date(x.post.record.createdAt))===day});document.getElementById('todayCount').textContent=today.length;document.getElementById('todayFill').style.width=Math.min(100,today.length/3*100)+'%';document.getElementById('postCount').textContent=nf.format(exp.length);document.getElementById('likes').textContent=nf.format(a.likes);document.getElementById('engagement').textContent=nf.format(a.likes+a.reposts+a.replies);bars(a);nextInfo(today.length);evaluateImprovement(all);
 var latest=all[0],dot=document.getElementById('statusDot'),txt=document.getElementById('statusText'),detail=document.getElementById('statusDetail'),alert=document.getElementById('alert');if(latest){var age=(Date.now()-new Date(latest.post.record.createdAt))/36e5;if(new Date(latest.post.record.createdAt)<START){dot.style.background='var(--bad)';txt.textContent='停止の可能性';detail.textContent='実験開始以降の公開投稿がありません。';alert.style.display='block';alert.textContent='要確認: 公開フィードで新しい投稿を検知できません。'}else if(age>36){dot.style.background='var(--warn)';txt.textContent='要確認';detail.textContent='最新投稿から36時間以上空いています。最終投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='block';alert.textContent='公開側で長時間投稿がありません。n8nのExecutionsを確認してください。'}else if(today.length>=3){dot.style.background='var(--good)';txt.textContent='正常・本日の上限到達';detail.textContent='公開投稿を検知。日次上限後の停止フェーズです。最新投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='none'}else{dot.style.background='var(--good)';txt.textContent='自動投稿 稼働中';detail.textContent='公開投稿を正常に検知しています。最新投稿 '+dt.format(new Date(latest.post.record.createdAt));alert.style.display='none'}}else{txt.textContent='データなし';detail.textContent='公開フィードに投稿がありません。'}
 var out='';exp.slice(0,12).forEach(function(x){out+='<article class="post"><div class="posttop"><span>'+dt.format(new Date(x.post.record.createdAt))+'</span><a class="link" href="'+url(x)+'" target="_blank" rel="noopener">Blueskyで見る ↗</a></div><div class="posttext">'+esc(x.post.record.text||'')+'</div><div class="metrics"><span class="pill">♡ '+nf.format(x.post.likeCount||0)+'</span><span class="pill">↻ '+nf.format(x.post.repostCount||0)+'</span><span class="pill">💬 '+nf.format(x.post.replyCount||0)+'</span></div></article>'});document.getElementById('posts').innerHTML=out||'<div class="empty">実験開始以降の投稿はまだありません。</div>';document.getElementById('updated').textContent='更新 '+dt.format(new Date())}catch(e){document.getElementById('updated').textContent='取得エラー';document.getElementById('statusText').textContent='公開データ取得エラー';document.getElementById('statusDetail').textContent='Bluesky APIからデータを取得できませんでした。';var al=document.getElementById('alert');al.style.display='block';al.textContent='通信エラー: 少し後で再読み込みしてください。';document.getElementById('posts').innerHTML='<div class="empty">Bluesky公開データの取得に失敗しました。</div>'}}
 load();setInterval(load,300000);
